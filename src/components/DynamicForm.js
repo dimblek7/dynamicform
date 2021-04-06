@@ -273,7 +273,7 @@ function App({ parentForm }) {
       })}
       <div className="col-md-12">
         <input type="submit" />
-        <h3>{formState && JSON.stringify(formState.isValid)}</h3>
+        <h3>Is form validated: {formState && JSON.stringify(formState.isValid)}</h3>
         {/* <Viewer control={control} /> */}
         <div className="text-secondary">
           {/* DS this JSON to render above form: {JSON.stringify(fields, null, "\t")} */}
