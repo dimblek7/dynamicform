@@ -1,24 +1,43 @@
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
-import { atom, useRecoilState } from "recoil";
+import { selector, useRecoilState } from "recoil";
+import { rootFormState } from "../atoms";
+import {highlightedFormSelector, rootFormSelector} from "../selectors";
 
-export const parentFormState = atom({
-  key: "parentFormState",
-  default: { label_positioning: "top" },
-});
+export default function Wrapper() {
+  const [highlightedForm, sethighlightedForm] = useRecoilState(highlightedFormSelector);
 
-export default function ParentForm(props) {
-  const { control, handleSubmit, watch, errors, register } = props;
-  // const { control, handleSubmit, watch, errors, register } = useForm();
-  // const _props = { control, handleSubmit, watch, errors, register };
+  // refresher
+  // const [refresh_form, setrefresh_form] = React.useState(false);
+  // React.useEffect(() => {
+  //   setrefresh_form(false);
+  //   setTimeout(() => {
+  //     setrefresh_form(true);
+  //   }, 1);
+  // }, [highlightedForm]);
 
-  const [parentForm, setparentForm] = useRecoilState(parentFormState);
+  if (!highlightedForm) {
+    return null;
+  }
+  return <ParentForm />
+}
+
+function ParentForm() {
+  const [highlightedForm, sethighlightedForm] = useRecoilState(highlightedFormSelector);
+
+  const { control, handleSubmit, watch, errors, register, setValue } = useForm({
+    defaultValues: highlightedForm
+  });
+
+  React.useEffect(() => {
+    setValue('form_title', highlightedForm.form_title);
+    setValue('number_of_columns', highlightedForm.number_of_columns);
+    setValue('label_positioning', highlightedForm.label_positioning);
+  }, [highlightedForm]);
 
   const onSubmit = (data) => {
-    setparentForm({ ...parentForm, ...data });
+    sethighlightedForm(data);
   };
-
-  // console.log("ParentForm", watch()); // this re-renders the component
 
   return (
     <div className="row form-parent">

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
-import * as yup from "yup";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { selector, useRecoilValue } from "recoil";
-import { parentFormState } from "./ParentForm";
+import * as yup from "yup";
+import { rootFormState } from "../atoms";
+import { highlightedFormSelector, rootFormSelector } from "../selectors";
+import FormSelector from "./FormSelector";
 let counter = 0;
 
 function escapeRegExp(string) {
@@ -14,13 +16,13 @@ function escapeRegExp(string) {
   return _result;
 }
 
-const parentFormStateSelector = selector({
-  key: "parentFormStateSelector", // unique ID (with respect to other atoms/selectors)
+const dynamicFormSelector = selector({
+  key: "dynamicFormSelector", // unique ID (with respect to other atoms/selectors)
   get: ({ get }) => {
     // run DS login and create algorithm
     counter++;
-    const text = get(parentFormState);
-    const fields = (text.fields || []).map((field) => ({
+    const _rootFormState = get(rootFormState);
+    const fields = (_rootFormState.forms[_rootFormState.highlighted_form_index].fields || []).map((field) => ({
       ...field,
       rules: {
         required: field.required,
@@ -35,29 +37,35 @@ const parentFormStateSelector = selector({
       [field.label]: null,
       [field.id]: null,
     }));
-    return { ...text, fields, counter };
+    return fields;
   },
 });
 
 export default function Wrapper() {
-  const [refresh_form, setrefresh_form] = React.useState(false);
-  const parentForm = useRecoilValue(parentFormStateSelector);
+  const highlightedForm = useRecoilValue(highlightedFormSelector);
 
+  // refresher
+  const [refresh_form, setrefresh_form] = React.useState(false);
   useEffect(() => {
     setrefresh_form(false);
     setTimeout(() => {
       setrefresh_form(true);
-    }, 100);
-  }, [parentForm]);
+    }, 1);
+  }, [highlightedForm]);
 
+  if (!highlightedForm || !refresh_form) {
+    return null;
+  }
   return (
-    <div className="col-md-6">
+    <div className="col-md-6 bg-info">
       <div className="m-2">
-        <h3>Form Preview</h3>
+        <h3>Form Preview: {highlightedForm.form_title}</h3>
+        <FormSelector selectOnly />
+        <App />
         {/* <h6>Title: {parentForm.form_title}</h6>
         <h6>Columns: {parentForm.number_of_columns}</h6>
         <h6>Label position: {parentForm.label_positioning}</h6> */}
-        {!!(parentForm && parentForm.fields && parentForm.fields[0] && refresh_form) && <App parentForm={parentForm} />}
+        {/* {!!(parentForm && parentForm.fields && parentForm.fields[0] && refresh_form) && <App parentForm={parentForm} />} */}
       </div>
     </div>
   );
@@ -71,12 +79,15 @@ const fieldsSchema = yup.object().shape({
   test: yup.array().of(yup.object().shape(formSchema)).required("Must have fields").min(1, "Minimum of 1 field"),
 });
 
-function App({ parentForm }) {
-  const [number_of_columns, setnumber_of_columns] = useState(2);
+function App() {
+  const dynamicFormFields = useRecoilValue(dynamicFormSelector);
+  // const rootForm = useRecoilValue(rootFormSelector);
+
+  const highlightedForm = useRecoilValue(highlightedFormSelector);
 
   const { handleSubmit, control, register, formState, errors } = useForm({
     defaultValues: {
-      test: parentForm.fields,
+      test: dynamicFormFields,
     },
     // validationSchema: fieldsSchema,
     mode: "onChange",
@@ -87,14 +98,7 @@ function App({ parentForm }) {
     name: "test",
   });
 
-  useEffect(() => {
-    console.log("parentForm.fields: ", parentForm.fields);
-    setnumber_of_columns(parentForm.number_of_columns || 2);
-  }, [parentForm]);
-
   const onSubmit = (data) => console.log(data);
-
-  console.log("formState.isValid", errors);
 
   return (
     <form form="dynamic-form" className="row" onSubmit={handleSubmit(onSubmit)}>
@@ -261,12 +265,12 @@ function App({ parentForm }) {
           }
         };
         return (
-          <div className={`col-md-${Math.abs(12 / number_of_columns)} p-1`}>
+          <div className={`col-md-${Math.abs(12 / Number(highlightedForm.number_of_columns))} p-1`}>
             <div className="border rounded p-2 m-1">
-              <div className={parentForm.label_positioning === "left" ? "pull-left mr-2" : ""}>
+              <div className={highlightedForm.label_positioning === "left" ? "pull-left mr-2" : ""}>
                 <strong>{field.label}{!!field.rules.required && "*"}</strong>
               </div>
-              <div className={parentForm.label_positioning === "left w-100" ? "" : "w-100"}>{getField(field)}</div>
+              <div className={highlightedForm.label_positioning === "left w-100" ? "" : "w-100"}>{getField(field)}</div>
             </div>
           </div>
         );

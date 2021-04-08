@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
-import { useRecoilState } from "recoil";
-import { parentFormState } from "./ParentForm";
+import React from "react";
 // import * as React from "react";
-import { useForm, useFieldArray, Controller, useWatch } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
+import { useRecoilState } from "recoil";
+import { rootFormState } from "../atoms";
+import {highlightedFormSelector} from "../selectors";
 
 const ControllerInput = ({ control, index, field }) => {
   const value = useWatch({
@@ -110,26 +111,30 @@ const ControllerSelect = ({ control, index, field }) => {
   );
 };
 
-const defaultArray = [
-  {
-    id: "id1",
-    type: "text",
-    label: "text1",
-    required: true,
-    regex: "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)*$",
-  },
-  { id: "id2", type: "number", label: "number1", required: false, regex: "^[1-9][0-9]?$|^100$" },
-  { id: "id3", type: "dropdown", label: "dropdown1", required: false, regex: "" },
-  { id: "id4", type: "checkbox", label: "checkbox1", required: false, regex: "" },
-  { id: "id5", type: "radio", label: "radio1", required: false, regex: "" },
-  { id: "id6", type: "label", label: "label1", required: false, regex: "" },
-];
+export default function Wrapper() {
+  const [highlightedForm, sethighlightedForm] = useRecoilState(highlightedFormSelector);
 
-export default function FormCreator() {
-  const [parentForm, setparentForm] = useRecoilState(parentFormState);
+  // refresher
+  const [refresh_form, setrefresh_form] = React.useState(false);
+  React.useEffect(() => {
+    setrefresh_form(false);
+    setTimeout(() => {
+      setrefresh_form(true);
+    }, 1);
+  }, [highlightedForm]);
+
+  if (!highlightedForm || !refresh_form) {
+    return null;
+  }
+  return <FieldsCreator />
+}
+
+function FieldsCreator() {
+  const [highlightedForm, sethighlightedForm] = useRecoilState(highlightedFormSelector);
+
   const { handleSubmit, control, register, watch } = useForm({
     defaultValues: {
-      test: defaultArray,
+      test: highlightedForm.fields,
     },
   });
 
@@ -139,8 +144,7 @@ export default function FormCreator() {
   });
 
   const onSubmit = (data) => {
-    console.log("data: ", data);
-    setparentForm({ ...parentForm, fields: [...data.test] });
+    sethighlightedForm({ fields: [...data.test] });
   };
 
   return (
@@ -169,7 +173,7 @@ export default function FormCreator() {
 }
 
 // export const FormCreator = (props) => {
-//   const [parentForm, setparentForm] = useRecoilState(parentFormState);
+//   const [parentForm, setparentForm] = useRecoilState(rootFormState);
 
 //   const { control, handleSubmit, watch, errors, register } = props;
 
