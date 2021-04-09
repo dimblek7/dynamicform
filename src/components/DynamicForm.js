@@ -57,7 +57,7 @@ export default function Wrapper() {
     return null;
   }
   return (
-    <div className="col-md-6 bg-info">
+    <div className="col-md-6" style={{ background: "#eeeeee" }}>
       <div className="m-2">
         <h3>Form Preview: {highlightedForm.form_title}</h3>
         <FormSelector selectOnly />
